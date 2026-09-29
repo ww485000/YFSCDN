@@ -22,6 +22,9 @@ func RegisterAdmin(r *webx.Router, s *Store, tasks *task.Store) {
 		}
 		webx.Page(c.W, out, total)
 	})
+	r.POST("/api/v1/admin/dns/syncs/:id/retry", func(c *webx.Context) {
+		retrySync(c, s, tasks, 0)
+	})
 	r.POST("/api/v1/admin/dns/providers", func(c *webx.Context) {
 		var p Provider
 		if err := webx.BindJSON(c, &p); err != nil {
@@ -110,6 +113,9 @@ func RegisterUser(r *webx.Router, s *Store, tasks *task.Store) {
 		}
 		webx.Page(c.W, out, total)
 	})
+	r.POST("/api/v1/user/dns/syncs/:id/retry", func(c *webx.Context) {
+		retrySync(c, s, tasks, c.User.TenantID())
+	})
 	r.POST("/api/v1/user/dns/providers", func(c *webx.Context) {
 		var p Provider
 		if err := webx.BindJSON(c, &p); err != nil {
@@ -196,4 +202,27 @@ func itoa(v int64) string {
 		n /= 10
 	}
 	return string(b[i:])
+}
+
+func retrySync(c *webx.Context, s *Store, tasks *task.Store, tenantID int64) {
+	id, err := webx.ParamInt64(c, "id")
+	if err != nil {
+		webx.Fail(c.W, 400, 400, err.Error())
+		return
+	}
+	row, err := s.GetSyncView(id)
+	if err != nil {
+		webx.Fail(c.W, 404, 404, err.Error())
+		return
+	}
+	if tenantID > 0 && row.TenantID != tenantID {
+		webx.Fail(c.W, 404, 404, "sync not found")
+		return
+	}
+	taskID, err := tasks.Enqueue(task.TypeDNSResolve, "record:"+itoa(row.RecordID), "")
+	if err != nil {
+		webx.Fail(c.W, 500, 500, err.Error())
+		return
+	}
+	webx.OK(c.W, map[string]any{"task_id": taskID})
 }

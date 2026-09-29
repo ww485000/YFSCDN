@@ -70,3 +70,7 @@ export function listDnsSyncs(
   p.set('size', String(q.size || 20));
   return get(`${base(scope)}/dns/syncs?${p.toString()}`);
 }
+
+export function retryDnsSync(scope: Scope, id: number): Promise<{ task_id: number }> {
+  return post(`${base(scope)}/dns/syncs/${id}/retry`, {});
+}

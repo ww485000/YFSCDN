@@ -276,3 +276,19 @@ func (s *Store) ListSyncs(tenantID int64, status string, page, size int) ([]Sync
 	}
 	return out, total, rows.Err()
 }
+
+func (s *Store) GetSyncView(id int64) (SyncView, error) {
+	var row SyncView
+	err := s.db.QueryRow(`SELECT s.id, p.tenant_id, s.provider_id, p.name, p.type, s.record_id,
+			COALESCE(r.domain, ''), COALESCE(r.name, ''), COALESCE(r.type, ''), COALESCE(r.value, ''),
+			s.upstream_id, s.last_hash, s.last_error, s.created_at, s.updated_at
+		FROM dns_record_sync s
+		JOIN dns_providers p ON p.id = s.provider_id
+		LEFT JOIN dns_records r ON r.id = s.record_id
+		WHERE s.id = ?`, id).Scan(&row.ID, &row.TenantID, &row.ProviderID, &row.ProviderName, &row.ProviderType, &row.RecordID,
+		&row.Domain, &row.Name, &row.RecordType, &row.Value, &row.UpstreamID, &row.LastHash, &row.LastError, &row.CreatedAt, &row.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return row, fmt.Errorf("sync not found")
+	}
+	return row, err
+}
