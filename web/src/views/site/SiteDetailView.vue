@@ -933,16 +933,11 @@ onMounted(() => {
 
 <style scoped>
 .section-title {
-  font-weight: 600;
-  margin: 8px 0;
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--yf-text);
 }
 .rule-box {
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 10px;
-  background: #fafafa;
+  border-color: var(--yf-card-border);
+  border-radius: var(--yf-radius);
+  background: color-mix(in srgb, var(--yf-card-bg) 88%, var(--yf-layout-bg));
 }
 </style>
