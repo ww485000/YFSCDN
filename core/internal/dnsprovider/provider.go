@@ -24,6 +24,24 @@ type Provider struct {
 	UpdatedAt   string `json:"updated_at"`
 }
 
+type SyncView struct {
+	ID           int64  `json:"id"`
+	TenantID     int64  `json:"tenant_id"`
+	ProviderID   int64  `json:"provider_id"`
+	ProviderName string `json:"provider_name"`
+	ProviderType string `json:"provider_type"`
+	RecordID     int64  `json:"record_id"`
+	Domain       string `json:"domain"`
+	Name         string `json:"name"`
+	RecordType   string `json:"record_type"`
+	Value        string `json:"value"`
+	UpstreamID   string `json:"upstream_id"`
+	LastHash     string `json:"last_hash"`
+	LastError    string `json:"last_error"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
 type Store struct{ db *sql.DB }
 
 func New(db *sql.DB) *Store { return &Store{db: db} }
@@ -208,4 +226,53 @@ func (s *Store) DeleteSync(providerID, recordID int64) error {
 func (s *Store) DeleteRecordSyncs(recordID int64) error {
 	_, err := s.db.Exec(`DELETE FROM dns_record_sync WHERE record_id = ?`, recordID)
 	return err
+}
+
+func (s *Store) ListSyncs(tenantID int64, status string, page, size int) ([]SyncView, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 || size > 200 {
+		size = 20
+	}
+	where := `WHERE 1=1`
+	var args []any
+	if tenantID > 0 {
+		where += ` AND p.tenant_id = ?`
+		args = append(args, tenantID)
+	}
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "success":
+		where += ` AND s.last_error = ''`
+	case "failed":
+		where += ` AND s.last_error <> ''`
+	}
+	var total int64
+	if err := s.db.QueryRow(`SELECT COUNT(*)
+		FROM dns_record_sync s
+		JOIN dns_providers p ON p.id = s.provider_id
+		LEFT JOIN dns_records r ON r.id = s.record_id `+where, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	rows, err := s.db.Query(`SELECT s.id, p.tenant_id, s.provider_id, p.name, p.type, s.record_id,
+			COALESCE(r.domain, ''), COALESCE(r.name, ''), COALESCE(r.type, ''), COALESCE(r.value, ''),
+			s.upstream_id, s.last_hash, s.last_error, s.created_at, s.updated_at
+		FROM dns_record_sync s
+		JOIN dns_providers p ON p.id = s.provider_id
+		LEFT JOIN dns_records r ON r.id = s.record_id `+where+`
+		ORDER BY s.updated_at DESC, s.id DESC LIMIT ? OFFSET ?`, append(args, size, (page-1)*size)...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	var out []SyncView
+	for rows.Next() {
+		var row SyncView
+		if err := rows.Scan(&row.ID, &row.TenantID, &row.ProviderID, &row.ProviderName, &row.ProviderType, &row.RecordID,
+			&row.Domain, &row.Name, &row.RecordType, &row.Value, &row.UpstreamID, &row.LastHash, &row.LastError, &row.CreatedAt, &row.UpdatedAt); err != nil {
+			return nil, 0, err
+		}
+		out = append(out, row)
+	}
+	return out, total, rows.Err()
 }

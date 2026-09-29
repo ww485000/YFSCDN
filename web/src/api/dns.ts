@@ -1,6 +1,6 @@
 // DNS record API (admin cross-tenant, tenant own scope).
 import { del, get, post, put } from './http';
-import type { DnsProvider, DnsRecord, PageData } from '@/types';
+import type { DnsProvider, DnsRecord, DnsSync, PageData } from '@/types';
 import type { Scope } from './site';
 
 const base = (scope: Scope) => (scope === 'admin' ? '/api/v1/admin' : '/api/v1/user');
@@ -57,4 +57,16 @@ export function deleteDnsProvider(scope: Scope, id: number): Promise<unknown> {
 
 export function syncDnsProvider(scope: Scope, id: number): Promise<{ task_id: number }> {
   return post(`${base(scope)}/dns/providers/${id}/sync`, {});
+}
+
+export function listDnsSyncs(
+  scope: Scope,
+  q: { tenantId?: number; status?: string; page?: number; size?: number } = {},
+): Promise<PageData<DnsSync>> {
+  const p = new URLSearchParams();
+  if (q.tenantId) p.set('tenant_id', String(q.tenantId));
+  if (q.status) p.set('status', q.status);
+  p.set('page', String(q.page || 1));
+  p.set('size', String(q.size || 20));
+  return get(`${base(scope)}/dns/syncs?${p.toString()}`);
 }

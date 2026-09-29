@@ -504,6 +504,24 @@ export interface DnsProvider {
   updated_at: string;
 }
 
+export interface DnsSync {
+  id: number;
+  tenant_id: number;
+  provider_id: number;
+  provider_name: string;
+  provider_type: string;
+  record_id: number;
+  domain: string;
+  name: string;
+  record_type: string;
+  value: string;
+  upstream_id: string;
+  last_hash: string;
+  last_error: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- site stats / logs (detail page) ----
 
 export interface SiteStats {

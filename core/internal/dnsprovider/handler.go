@@ -14,6 +14,14 @@ func RegisterAdmin(r *webx.Router, s *Store, tasks *task.Store) {
 		}
 		webx.Page(c.W, out, total)
 	})
+	r.GET("/api/v1/admin/dns/syncs", func(c *webx.Context) {
+		out, total, err := s.ListSyncs(webx.QueryInt64(c, "tenant_id", 0), webx.QueryStr(c, "status"), webx.QueryInt(c, "page", 1), webx.QueryInt(c, "size", 20))
+		if err != nil {
+			webx.Fail(c.W, 500, 500, err.Error())
+			return
+		}
+		webx.Page(c.W, out, total)
+	})
 	r.POST("/api/v1/admin/dns/providers", func(c *webx.Context) {
 		var p Provider
 		if err := webx.BindJSON(c, &p); err != nil {
@@ -88,6 +96,14 @@ func RegisterAdmin(r *webx.Router, s *Store, tasks *task.Store) {
 func RegisterUser(r *webx.Router, s *Store, tasks *task.Store) {
 	r.GET("/api/v1/user/dns/providers", func(c *webx.Context) {
 		out, total, err := s.List(c.User.TenantID(), webx.QueryInt(c, "page", 1), webx.QueryInt(c, "size", 20))
+		if err != nil {
+			webx.Fail(c.W, 500, 500, err.Error())
+			return
+		}
+		webx.Page(c.W, out, total)
+	})
+	r.GET("/api/v1/user/dns/syncs", func(c *webx.Context) {
+		out, total, err := s.ListSyncs(c.User.TenantID(), webx.QueryStr(c, "status"), webx.QueryInt(c, "page", 1), webx.QueryInt(c, "size", 20))
 		if err != nil {
 			webx.Fail(c.W, 500, 500, err.Error())
 			return
