@@ -1,0 +1,10 @@
+.tools/
+*.db
+*.db-wal
+*.db-shm
+node_modules/
+dist/
+*.log
+config.local.json
+edge/data/
+core/data/

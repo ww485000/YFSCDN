@@ -1,0 +1,11 @@
+{
+  "core_url": "http://127.0.0.1:8080",
+  "node_token": "d2c0f92afc41645033c38aadf73e01d2",
+  "name": "node-a",
+  "driver": "gopxy",
+  "listen_addr": "127.0.0.1:18080",
+  "tls_addr": "127.0.0.1:18443",
+  "data_dir": "E:\\WORK\\9\\edge\\data",
+  "heartbeat_sec": 5,
+  "host": "127.0.0.1"
+}

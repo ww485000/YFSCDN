@@ -1,0 +1,55 @@
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #f5f7fa;
+}
+
+.logo {
+  height: 56px;
+  line-height: 56px;
+  text-align: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+.page-card {
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.page-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.stat-label {
+  color: #8c8c8c;
+  font-size: 12px;
+  margin-top: 4px;
+}

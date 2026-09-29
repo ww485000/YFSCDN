@@ -1,0 +1,6 @@
+{
+  "listen_addr": ":8080",
+  "data_dir": "E:\\WORK\\9\\core\\data",
+  "jwt_secret": "edgecdn-local-dev-secret-change-me",
+  "cors_origin": "*"
+}

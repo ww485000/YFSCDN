@@ -1,0 +1,7 @@
+# pnpm 12 build-script policy.
+# esbuild's postinstall only validates the binary (which is already shipped by the
+# @esbuild/win32-x64 optional dependency); core-js's postinstall is a donation notice.
+# Both are disabled to keep installs script-free (also works under restrictive sandboxes).
+allowBuilds:
+  core-js: false
+  esbuild: false
