@@ -113,6 +113,9 @@ func (p *Processor) syncRecord(recordID int64) error {
 }
 
 func (p *Processor) upsert(provider Provider, rec dns.Record) error {
+	if rec.SyncMode == "manual" {
+		return nil
+	}
 	upstreamID, _ := p.providers.GetSync(provider.ID, rec.ID)
 	hash := RecordHash(rec)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

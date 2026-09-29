@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // DNS record management (GoEdge DNS module). Admin cross-tenant; tenant own.
-// Provider push (upstream DNS APIs) is a documented stub in this build.
 import { computed, onMounted, reactive, ref } from 'vue';
 import { message } from 'ant-design-vue';
 import { useAuthStore } from '@/stores/auth';
@@ -26,6 +25,7 @@ const editing = ref<DnsRecord | null>(null);
 const form = reactive<Partial<DnsRecord> & { tenant_id?: number }>({});
 
 const TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV'];
+const LINE_OPTIONS = ['default', 'telecom', 'unicom', 'mobile', 'oversea', 'search'];
 
 async function load() {
   loading.value = true;
@@ -61,6 +61,10 @@ function openCreate() {
     priority: 0,
     ttl: 600,
     enabled: 1,
+    line: 'default',
+    weight: 0,
+    proxied: 0,
+    sync_mode: 'auto',
     remark: '',
     tenant_id: scope.value === 'admin' ? undefined : undefined,
   });
@@ -78,6 +82,10 @@ function openEdit(r: DnsRecord) {
     priority: r.priority,
     ttl: r.ttl,
     enabled: r.enabled,
+    line: r.line || 'default',
+    weight: r.weight || 0,
+    proxied: r.proxied || 0,
+    sync_mode: r.sync_mode || 'auto',
     remark: r.remark,
   });
   show.value = true;
@@ -150,9 +158,19 @@ onMounted(() => {
         </template>
       </a-table-column>
       <a-table-column title="TTL" data-index="ttl" width="70" />
+      <a-table-column title="线路" width="90">
+        <template #default="{ record }">{{ record.line || 'default' }}</template>
+      </a-table-column>
+      <a-table-column title="权重" data-index="weight" width="70" />
       <a-table-column title="状态" width="80">
         <template #default="{ record }">
           <a-tag :color="record.enabled ? 'green' : 'default'">{{ record.enabled ? '启用' : '停用' }}</a-tag>
+        </template>
+      </a-table-column>
+      <a-table-column title="同步" width="110">
+        <template #default="{ record }">
+          <a-tag :color="record.sync_mode === 'manual' ? 'orange' : 'blue'">{{ record.sync_mode === 'manual' ? '手动' : '自动' }}</a-tag>
+          <a-tag v-if="record.proxied" color="purple">代理</a-tag>
         </template>
       </a-table-column>
       <a-table-column title="备注" data-index="remark" width="140" />
@@ -169,7 +187,7 @@ onMounted(() => {
         </template>
       </a-table-column>
     </a-table>
-    <a-alert type="info" show-icon class="mt-3" message="记录在本平台管理；上游 DNS 服务商推送（云厂商 API）为预留集成点（任务类型 dns_resolve/dns_clean），当前构建不做外部调用。" />
+    <a-alert type="info" show-icon class="mt-3" message="DNS 记录会通过后台任务同步到启用的上游服务商；手动同步模式仅保存本地记录，不自动推送。" />
 
     <a-modal v-model:open="show" :title="editing ? '编辑记录' : '添加记录'" width="560px" @ok="submit">
       <a-form layout="vertical" :model="form">
@@ -210,14 +228,39 @@ onMounted(() => {
           </a-col>
         </a-row>
         <a-row :gutter="16">
-          <a-col :span="8">
+          <a-col :span="6">
             <a-form-item label="TTL (秒)">
               <a-input-number v-model:value="form.ttl" :min="60" style="width: 100%" />
             </a-form-item>
           </a-col>
-          <a-col :span="8">
+          <a-col :span="6">
             <a-form-item label="状态">
               <a-select v-model:value="form.enabled" :options="[{ value: 1, label: '启用' }, { value: 0, label: '停用' }]" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="线路">
+              <a-select
+                v-model:value="form.line"
+                :options="LINE_OPTIONS.map((line) => ({ value: line, label: line }))"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="权重">
+              <a-input-number v-model:value="form.weight" :min="0" style="width: 100%" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="8">
+            <a-form-item label="同步模式">
+              <a-select v-model:value="form.sync_mode" :options="[{ value: 'auto', label: '自动同步' }, { value: 'manual', label: '仅本地/手动' }]" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="8">
+            <a-form-item label="Cloudflare 代理">
+              <a-select v-model:value="form.proxied" :options="[{ value: 0, label: '关闭' }, { value: 1, label: '开启' }]" />
             </a-form-item>
           </a-col>
           <a-col :span="8">

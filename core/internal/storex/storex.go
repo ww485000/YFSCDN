@@ -200,6 +200,10 @@ func codeMigrations(db *sql.DB) error {
 		{"certs", "type", "TEXT NOT NULL DEFAULT 'ca'"},
 		{"certs", "issuer", "TEXT NOT NULL DEFAULT ''"},
 		{"nodes", "version", "TEXT NOT NULL DEFAULT ''"},
+		{"dns_records", "line", "TEXT NOT NULL DEFAULT 'default'"},
+		{"dns_records", "weight", "INTEGER NOT NULL DEFAULT 0"},
+		{"dns_records", "proxied", "INTEGER NOT NULL DEFAULT 0"},
+		{"dns_records", "sync_mode", "TEXT NOT NULL DEFAULT 'auto'"},
 	}
 	for _, a := range alters {
 		rows, err := db.Query(`PRAGMA table_info(` + a.table + `)`)

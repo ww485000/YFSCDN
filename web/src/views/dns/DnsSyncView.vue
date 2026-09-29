@@ -149,6 +149,11 @@ onMounted(() => {
         <template #default="{ record }">
           <div class="font-500">{{ fqdn(record) }}</div>
           <div class="text-xs text-gray-400">{{ record.record_type || '-' }} {{ record.value || '' }}</div>
+          <div class="text-xs text-gray-400">
+            {{ record.line || 'default' }} · 权重 {{ record.weight || 0 }}
+            <span v-if="record.proxied"> · 代理</span>
+            <span v-if="record.sync_mode === 'manual'"> · 手动</span>
+          </div>
         </template>
       </a-table-column>
       <a-table-column title="上游 ID" data-index="upstream_id" width="190" />

@@ -27,6 +27,10 @@ type Record struct {
 	Priority  int    `json:"priority"` // MX only
 	TTL       int    `json:"ttl"`
 	Enabled   int    `json:"enabled"`
+	Line      string `json:"line"`      // provider line/route: default, telecom, unicom, etc.
+	Weight    int    `json:"weight"`    // provider load-balance weight, if supported
+	Proxied   int    `json:"proxied"`   // Cloudflare proxy switch
+	SyncMode  string `json:"sync_mode"` // auto | manual
 	Remark    string `json:"remark"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
@@ -37,15 +41,36 @@ type Store struct{ db *sql.DB }
 
 func New(db *sql.DB) *Store { return &Store{db: db} }
 
-const cols = `id, tenant_id, domain, name, type, value, priority, ttl, enabled, remark, created_at, updated_at`
+const cols = `id, tenant_id, domain, name, type, value, priority, ttl, enabled, line, weight, proxied, sync_mode, remark, created_at, updated_at`
 
 func scan(r interface{ Scan(...any) error }) (Record, error) {
 	var c Record
-	err := r.Scan(&c.ID, &c.TenantID, &c.Domain, &c.Name, &c.Type, &c.Value, &c.Priority, &c.TTL, &c.Enabled, &c.Remark, &c.CreatedAt, &c.UpdatedAt)
+	err := r.Scan(&c.ID, &c.TenantID, &c.Domain, &c.Name, &c.Type, &c.Value, &c.Priority, &c.TTL, &c.Enabled, &c.Line, &c.Weight, &c.Proxied, &c.SyncMode, &c.Remark, &c.CreatedAt, &c.UpdatedAt)
 	return c, err
 }
 
 func normalize(t string) string { return strings.ToUpper(strings.TrimSpace(t)) }
+
+func normalizeLine(line string) string {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return "default"
+	}
+	return line
+}
+
+func normalizeSyncMode(mode string) string {
+	mode = strings.ToLower(strings.TrimSpace(mode))
+	if mode == "" {
+		return "auto"
+	}
+	switch mode {
+	case "auto", "manual":
+		return mode
+	default:
+		return "auto"
+	}
+}
 
 func (c Record) validate() error {
 	if strings.TrimSpace(c.Domain) == "" {
@@ -68,6 +93,9 @@ func (c Record) validate() error {
 	if t == "MX" && c.Priority < 0 {
 		return fmt.Errorf("MX priority must be >= 0")
 	}
+	if c.Weight < 0 {
+		return fmt.Errorf("weight must be >= 0")
+	}
 	return nil
 }
 
@@ -81,14 +109,16 @@ func (s *Store) insert(tenantID int64, c *Record) (int64, error) {
 		c.Name = c.Domain
 	}
 	c.Domain = strings.ToLower(strings.TrimSpace(c.Domain))
+	c.Line = normalizeLine(c.Line)
+	c.SyncMode = normalizeSyncMode(c.SyncMode)
 	c.Remark = strings.TrimSpace(c.Remark)
 	if c.TTL <= 0 {
 		c.TTL = 600
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	res, err := s.db.Exec(`INSERT INTO dns_records (tenant_id, domain, name, type, value, priority, ttl, enabled, remark, created_at, updated_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-		tenantID, c.Domain, c.Name, c.Type, c.Value, c.Priority, c.TTL, c.Enabled, c.Remark, now, now)
+	res, err := s.db.Exec(`INSERT INTO dns_records (tenant_id, domain, name, type, value, priority, ttl, enabled, line, weight, proxied, sync_mode, remark, created_at, updated_at)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		tenantID, c.Domain, c.Name, c.Type, c.Value, c.Priority, c.TTL, c.Enabled, c.Line, c.Weight, c.Proxied, c.SyncMode, c.Remark, now, now)
 	if err != nil {
 		return 0, err
 	}
@@ -114,12 +144,14 @@ func (s *Store) Update(c *Record) error {
 	c.Type = normalize(c.Type)
 	c.Name = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(c.Name)), ".")
 	c.Domain = strings.ToLower(strings.TrimSpace(c.Domain))
+	c.Line = normalizeLine(c.Line)
+	c.SyncMode = normalizeSyncMode(c.SyncMode)
 	if c.TTL <= 0 {
 		c.TTL = 600
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err = s.db.Exec(`UPDATE dns_records SET domain=?, name=?, type=?, value=?, priority=?, ttl=?, enabled=?, remark=?, updated_at=? WHERE id=?`,
-		c.Domain, c.Name, c.Type, c.Value, c.Priority, c.TTL, c.Enabled, c.Remark, now, c.ID)
+	_, err = s.db.Exec(`UPDATE dns_records SET domain=?, name=?, type=?, value=?, priority=?, ttl=?, enabled=?, line=?, weight=?, proxied=?, sync_mode=?, remark=?, updated_at=? WHERE id=?`,
+		c.Domain, c.Name, c.Type, c.Value, c.Priority, c.TTL, c.Enabled, c.Line, c.Weight, c.Proxied, c.SyncMode, c.Remark, now, c.ID)
 	return err
 }
 

@@ -27,6 +27,15 @@ func TestDNSPodSubDomain(t *testing.T) {
 	}
 }
 
+func TestDNSPodLine(t *testing.T) {
+	if got := dnspodLine(""); got != "默认" {
+		t.Fatalf("dnspodLine blank = %q", got)
+	}
+	if got := dnspodLine("telecom"); got != "telecom" {
+		t.Fatalf("dnspodLine custom = %q", got)
+	}
+}
+
 func TestAliyunRR(t *testing.T) {
 	cases := []struct {
 		name string
@@ -45,6 +54,15 @@ func TestAliyunRR(t *testing.T) {
 				t.Fatalf("aliyunRR() = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestAliyunLine(t *testing.T) {
+	if got := aliyunLine("default"); got != "" {
+		t.Fatalf("aliyunLine default = %q", got)
+	}
+	if got := aliyunLine("telecom"); got != "telecom" {
+		t.Fatalf("aliyunLine custom = %q", got)
 	}
 }
 

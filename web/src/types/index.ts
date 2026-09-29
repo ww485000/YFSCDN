@@ -485,6 +485,10 @@ export interface DnsRecord {
   priority: number;
   ttl: number;
   enabled: number;
+  line: string;
+  weight: number;
+  proxied: number;
+  sync_mode: string;
   remark: string;
   created_at: string;
   updated_at: string;
@@ -515,6 +519,10 @@ export interface DnsSync {
   name: string;
   record_type: string;
   value: string;
+  line: string;
+  weight: number;
+  proxied: number;
+  sync_mode: string;
   upstream_id: string;
   last_hash: string;
   last_error: string;

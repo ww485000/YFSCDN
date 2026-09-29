@@ -35,6 +35,10 @@ type SyncView struct {
 	Name         string `json:"name"`
 	RecordType   string `json:"record_type"`
 	Value        string `json:"value"`
+	Line         string `json:"line"`
+	Weight       int    `json:"weight"`
+	Proxied      int    `json:"proxied"`
+	SyncMode     string `json:"sync_mode"`
 	UpstreamID   string `json:"upstream_id"`
 	LastHash     string `json:"last_hash"`
 	LastError    string `json:"last_error"`
@@ -256,6 +260,7 @@ func (s *Store) ListSyncs(tenantID int64, status string, page, size int) ([]Sync
 	}
 	rows, err := s.db.Query(`SELECT s.id, p.tenant_id, s.provider_id, p.name, p.type, s.record_id,
 			COALESCE(r.domain, ''), COALESCE(r.name, ''), COALESCE(r.type, ''), COALESCE(r.value, ''),
+			COALESCE(r.line, ''), COALESCE(r.weight, 0), COALESCE(r.proxied, 0), COALESCE(r.sync_mode, ''),
 			s.upstream_id, s.last_hash, s.last_error, s.created_at, s.updated_at
 		FROM dns_record_sync s
 		JOIN dns_providers p ON p.id = s.provider_id
@@ -269,7 +274,8 @@ func (s *Store) ListSyncs(tenantID int64, status string, page, size int) ([]Sync
 	for rows.Next() {
 		var row SyncView
 		if err := rows.Scan(&row.ID, &row.TenantID, &row.ProviderID, &row.ProviderName, &row.ProviderType, &row.RecordID,
-			&row.Domain, &row.Name, &row.RecordType, &row.Value, &row.UpstreamID, &row.LastHash, &row.LastError, &row.CreatedAt, &row.UpdatedAt); err != nil {
+			&row.Domain, &row.Name, &row.RecordType, &row.Value, &row.Line, &row.Weight, &row.Proxied, &row.SyncMode,
+			&row.UpstreamID, &row.LastHash, &row.LastError, &row.CreatedAt, &row.UpdatedAt); err != nil {
 			return nil, 0, err
 		}
 		out = append(out, row)
@@ -281,12 +287,14 @@ func (s *Store) GetSyncView(id int64) (SyncView, error) {
 	var row SyncView
 	err := s.db.QueryRow(`SELECT s.id, p.tenant_id, s.provider_id, p.name, p.type, s.record_id,
 			COALESCE(r.domain, ''), COALESCE(r.name, ''), COALESCE(r.type, ''), COALESCE(r.value, ''),
+			COALESCE(r.line, ''), COALESCE(r.weight, 0), COALESCE(r.proxied, 0), COALESCE(r.sync_mode, ''),
 			s.upstream_id, s.last_hash, s.last_error, s.created_at, s.updated_at
 		FROM dns_record_sync s
 		JOIN dns_providers p ON p.id = s.provider_id
 		LEFT JOIN dns_records r ON r.id = s.record_id
 		WHERE s.id = ?`, id).Scan(&row.ID, &row.TenantID, &row.ProviderID, &row.ProviderName, &row.ProviderType, &row.RecordID,
-		&row.Domain, &row.Name, &row.RecordType, &row.Value, &row.UpstreamID, &row.LastHash, &row.LastError, &row.CreatedAt, &row.UpdatedAt)
+		&row.Domain, &row.Name, &row.RecordType, &row.Value, &row.Line, &row.Weight, &row.Proxied, &row.SyncMode,
+		&row.UpstreamID, &row.LastHash, &row.LastError, &row.CreatedAt, &row.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return row, fmt.Errorf("sync not found")
 	}

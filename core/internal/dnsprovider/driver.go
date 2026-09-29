@@ -40,7 +40,7 @@ func DriverFor(p Provider) Driver {
 }
 
 func RecordHash(r dns.Record) string {
-	raw := fmt.Sprintf("%d|%s|%s|%s|%s|%d|%d|%d", r.TenantID, r.Domain, r.Name, r.Type, r.Value, r.Priority, r.TTL, r.Enabled)
+	raw := fmt.Sprintf("%d|%s|%s|%s|%s|%d|%d|%d|%s|%d|%d|%s", r.TenantID, r.Domain, r.Name, r.Type, r.Value, r.Priority, r.TTL, r.Enabled, r.Line, r.Weight, r.Proxied, r.SyncMode)
 	sum := sha1.Sum([]byte(raw))
 	return hex.EncodeToString(sum[:])
 }
@@ -88,6 +88,12 @@ func (aliyunDriver) Upsert(ctx context.Context, p Provider, r dns.Record, upstre
 		"Value":      r.Value,
 		"TTL":        fmt.Sprint(r.TTL),
 	}
+	if line := aliyunLine(r.Line); line != "" {
+		params["Line"] = line
+	}
+	if r.Weight > 0 {
+		params["Weight"] = fmt.Sprint(r.Weight)
+	}
 	action := "AddDomainRecord"
 	if upstreamID != "" {
 		action = "UpdateDomainRecord"
@@ -114,6 +120,14 @@ func (aliyunDriver) Delete(ctx context.Context, p Provider, _ dns.Record, upstre
 		return nil
 	}
 	return aliyunRPC(ctx, p, "DeleteDomainRecord", map[string]string{"RecordId": upstreamID}, nil)
+}
+
+func aliyunLine(line string) string {
+	line = strings.TrimSpace(line)
+	if line == "" || strings.EqualFold(line, "default") {
+		return ""
+	}
+	return line
 }
 
 func aliyunRR(r dns.Record) string {
@@ -276,7 +290,7 @@ func (dnspodDriver) Upsert(ctx context.Context, p Provider, r dns.Record, upstre
 		"Domain":     r.Domain,
 		"SubDomain":  dnspodSubDomain(r),
 		"RecordType": r.Type,
-		"RecordLine": "默认",
+		"RecordLine": dnspodLine(r.Line),
 		"Value":      r.Value,
 		"TTL":        r.TTL,
 	}
@@ -311,6 +325,14 @@ func (dnspodDriver) Delete(ctx context.Context, p Provider, r dns.Record, upstre
 		"RecordId": upstreamID,
 	})
 	return err
+}
+
+func dnspodLine(line string) string {
+	line = strings.TrimSpace(line)
+	if line == "" || strings.EqualFold(line, "default") {
+		return "默认"
+	}
+	return line
 }
 
 func dnspodSubDomain(r dns.Record) string {
@@ -433,7 +455,7 @@ func (cloudflareDriver) Upsert(ctx context.Context, p Provider, r dns.Record, up
 		"name":    r.Name,
 		"content": r.Value,
 		"ttl":     r.TTL,
-		"proxied": false,
+		"proxied": r.Proxied == 1 && (r.Type == "A" || r.Type == "AAAA" || r.Type == "CNAME"),
 	}
 	if r.Type == "MX" {
 		body["priority"] = r.Priority
