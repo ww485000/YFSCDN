@@ -1,6 +1,6 @@
 // DNS record API (admin cross-tenant, tenant own scope).
 import { del, get, post, put } from './http';
-import type { DnsRecord, PageData } from '@/types';
+import type { DnsProvider, DnsRecord, PageData } from '@/types';
 import type { Scope } from './site';
 
 const base = (scope: Scope) => (scope === 'admin' ? '/api/v1/admin' : '/api/v1/user');
@@ -30,4 +30,31 @@ export function updateDns(scope: Scope, id: number, b: Partial<DnsRecord>): Prom
 
 export function deleteDns(scope: Scope, id: number): Promise<unknown> {
   return del(`${base(scope)}/dns/records/${id}`);
+}
+
+export function listDnsProviders(
+  scope: Scope,
+  q: { tenantId?: number; page?: number; size?: number } = {},
+): Promise<PageData<DnsProvider>> {
+  const p = new URLSearchParams();
+  if (q.tenantId) p.set('tenant_id', String(q.tenantId));
+  p.set('page', String(q.page || 1));
+  p.set('size', String(q.size || 20));
+  return get(`${base(scope)}/dns/providers?${p.toString()}`);
+}
+
+export function createDnsProvider(scope: Scope, b: Partial<DnsProvider> & { tenant_id?: number }): Promise<DnsProvider> {
+  return post(`${base(scope)}/dns/providers`, b);
+}
+
+export function updateDnsProvider(scope: Scope, id: number, b: Partial<DnsProvider>): Promise<unknown> {
+  return put(`${base(scope)}/dns/providers/${id}`, b);
+}
+
+export function deleteDnsProvider(scope: Scope, id: number): Promise<unknown> {
+  return del(`${base(scope)}/dns/providers/${id}`);
+}
+
+export function syncDnsProvider(scope: Scope, id: number): Promise<{ task_id: number }> {
+  return post(`${base(scope)}/dns/providers/${id}/sync`, {});
 }

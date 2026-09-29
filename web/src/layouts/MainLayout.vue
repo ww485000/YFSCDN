@@ -53,6 +53,7 @@ const adminMenus: MenuItem[] = [
   { key: '/admin/waf', label: 'WAF 规则', icon: SafetyCertificateOutlined },
   { key: '/admin/certs', label: '证书', icon: SafetyCertificateOutlined },
   { key: '/admin/dns', label: 'DNS 解析', icon: GlobalOutlined },
+  { key: '/admin/dns-providers', label: 'DNS 服务商', icon: CloudServerOutlined },
   { key: '/admin/goedge-parity', label: '复刻矩阵', icon: ProfileOutlined },
   { key: '/admin/usage', label: '流量计量', icon: FileTextOutlined },
   { key: '/admin/tasks', label: '后台任务', icon: ScheduleOutlined },
@@ -67,6 +68,7 @@ const tenantMenus: MenuItem[] = [
   { key: '/portal/waf', label: 'WAF 规则', icon: SafetyCertificateOutlined },
   { key: '/portal/certs', label: '证书', icon: SafetyCertificateOutlined },
   { key: '/portal/dns', label: 'DNS 解析', icon: GlobalOutlined },
+  { key: '/portal/dns-providers', label: 'DNS 服务商', icon: CloudServerOutlined },
   { key: '/portal/nodes', label: '边缘节点', icon: ApartmentOutlined },
   { key: '/portal/usage', label: '流量用量', icon: FileTextOutlined },
 ];

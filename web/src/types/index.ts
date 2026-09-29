@@ -490,6 +490,20 @@ export interface DnsRecord {
   updated_at: string;
 }
 
+export interface DnsProvider {
+  id: number;
+  tenant_id: number;
+  name: string;
+  type: string; // manual | mock | dnspod | cloudflare | aliyun
+  access_key: string;
+  secret_key?: string;
+  api_endpoint: string;
+  status: number;
+  remark: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- site stats / logs (detail page) ----
 
 export interface SiteStats {

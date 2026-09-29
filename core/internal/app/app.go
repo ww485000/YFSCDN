@@ -19,8 +19,9 @@ import (
 	"edgecdn/core/internal/authx"
 	"edgecdn/core/internal/cert"
 	"edgecdn/core/internal/cfg"
-	"edgecdn/core/internal/logs"
 	"edgecdn/core/internal/dns"
+	"edgecdn/core/internal/dnsprovider"
+	"edgecdn/core/internal/logs"
 	"edgecdn/core/internal/node"
 	"edgecdn/core/internal/oplog"
 	"edgecdn/core/internal/outbox"
@@ -84,6 +85,7 @@ func Run(configPath, staticDir string) error {
 	logsStore := logs.New(db)
 	tasksStore := task.New(db)
 	dnsStore := dns.New(db)
+	dnsProviders := dnsprovider.New(db)
 
 	// ---- HTTP ----
 	rt := webx.New()
@@ -115,8 +117,10 @@ func Run(configPath, staticDir string) error {
 	setting.Register(rt, settings, oplogs)
 	oplog.Register(rt, oplogs)
 	task.RegisterAdmin(rt, tasksStore)
-	dns.RegisterAdmin(rt, dnsStore)
-	dns.RegisterUser(rt, dnsStore)
+	dns.RegisterAdmin(rt, dnsStore, tasksStore)
+	dns.RegisterUser(rt, dnsStore, tasksStore)
+	dnsprovider.RegisterAdmin(rt, dnsProviders, tasksStore)
+	dnsprovider.RegisterUser(rt, dnsProviders, tasksStore)
 	parity.RegisterAdmin(rt)
 
 	rt.GET("/api/v1/health", func(c *webx.Context) {
@@ -199,6 +203,14 @@ func Run(configPath, staticDir string) error {
 			log.Printf("[task] re-issued expiring CA cert for %s", ct.Domain)
 			_ = sites.EmitByDomain(ct.Domain)
 		}
+		return nil
+	})
+	tasksStore.SetHandler(task.TypeDNSResolve, func(t *task.Task) error {
+		log.Printf("[task] dns resolve target=%s payload=%s", t.Target, t.Payload)
+		return nil
+	})
+	tasksStore.SetHandler(task.TypeDNSClean, func(t *task.Task) error {
+		log.Printf("[task] dns clean target=%s payload=%s", t.Target, t.Payload)
 		return nil
 	})
 	go func() {
