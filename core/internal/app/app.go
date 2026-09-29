@@ -271,14 +271,14 @@ func dashboardHandler(db *sql.DB, usageStore *usage.Store, logsStore *logs.Store
 		day := time.Now().UTC().Format("2006-01-02")
 		_ = db.QueryRow(`SELECT COUNT(*) FROM access_logs WHERE ts >= ?`, day).Scan(&logsToday)
 		webx.OK(c.W, map[string]any{
-			"tenants":          tCount,
-			"sites":            sCount,
-			"sites_online":     sOnline,
-			"nodes":            nCount,
-			"nodes_online":     nOnline,
-			"today_requests":   todayReq,
-			"today_bytes":      todayBytes,
-			"logs_today":       logsToday,
+			"tenants":        tCount,
+			"sites":          sCount,
+			"sites_online":   sOnline,
+			"nodes":          nCount,
+			"nodes_online":   nOnline,
+			"today_requests": todayReq,
+			"today_bytes":    todayBytes,
+			"logs_today":     logsToday,
 		})
 	}
 }
