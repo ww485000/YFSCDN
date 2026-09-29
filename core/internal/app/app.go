@@ -24,6 +24,7 @@ import (
 	"edgecdn/core/internal/node"
 	"edgecdn/core/internal/oplog"
 	"edgecdn/core/internal/outbox"
+	"edgecdn/core/internal/parity"
 	"edgecdn/core/internal/setting"
 	"edgecdn/core/internal/site"
 	"edgecdn/core/internal/storex"
@@ -116,6 +117,7 @@ func Run(configPath, staticDir string) error {
 	task.RegisterAdmin(rt, tasksStore)
 	dns.RegisterAdmin(rt, dnsStore)
 	dns.RegisterUser(rt, dnsStore)
+	parity.RegisterAdmin(rt)
 
 	rt.GET("/api/v1/health", func(c *webx.Context) {
 		webx.OK(c.W, map[string]any{"ok": true, "time": time.Now().UTC().Format(time.RFC3339)})

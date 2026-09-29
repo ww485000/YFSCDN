@@ -23,6 +23,7 @@ const router = createRouter({
         { path: 'certs', component: () => import('@/views/cert/CertView.vue') },
         { path: 'tasks', component: () => import('@/views/task/TaskView.vue') },
         { path: 'dns', component: () => import('@/views/dns/DnsView.vue') },
+        { path: 'goedge-parity', component: () => import('@/views/parity/ParityView.vue') },
         { path: 'usage', component: () => import('@/views/usage/UsageView.vue') },
         { path: 'admins', component: () => import('@/views/admin/AdminView.vue') },
         { path: 'settings', component: () => import('@/views/setting/SettingView.vue') },

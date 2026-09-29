@@ -517,3 +517,31 @@ export interface AccessLogEntry {
   referer: string;
   latency_ms: number;
 }
+
+// ---- GoEdge parity matrix ----
+
+export type GoEdgeParityStatus = 'done' | 'partial' | 'missing';
+
+export interface GoEdgeParityItem {
+  code: string;
+  name: string;
+  category: string;
+  status: GoEdgeParityStatus;
+  module: string;
+  admin_path: string;
+  user_path?: string;
+  notes: string;
+  next_action?: string;
+}
+
+export interface GoEdgeParitySummary {
+  total: number;
+  done: number;
+  partial: number;
+  missing: number;
+}
+
+export interface GoEdgeParityMatrix {
+  summary: GoEdgeParitySummary;
+  items: GoEdgeParityItem[];
+}

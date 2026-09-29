@@ -1,11 +1,12 @@
 // Operator (admin-scope) API — /api/v1/admin/*.
 import { del, get, post, put } from './http';
-import type { AdminUser, DashboardStats, DashboardTopSite, DayPoint, OpLog, PageData, Tenant, UsageDaily, UsageSummary } from '@/types';
+import type { AdminUser, DashboardStats, DashboardTopSite, DayPoint, GoEdgeParityMatrix, OpLog, PageData, Tenant, UsageDaily, UsageSummary } from '@/types';
 
 // dashboard
 export const getDashboard = (): Promise<DashboardStats> => get('/api/v1/admin/dashboard');
 export const dashboardSeries = (days = 14): Promise<DayPoint[]> => get(`/api/v1/admin/dashboard/series?days=${days}`);
 export const dashboardTopSites = (days = 7): Promise<DashboardTopSite[]> => get(`/api/v1/admin/dashboard/top-sites?days=${days}`);
+export const goEdgeParity = (): Promise<GoEdgeParityMatrix> => get('/api/v1/admin/goedge-parity');
 
 // admins
 export const listAdmins = (): Promise<AdminUser[]> => get('/api/v1/admin/admins');
