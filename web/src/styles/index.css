@@ -4,7 +4,45 @@ body,
   height: 100%;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background: #f5f7fa;
+  background: var(--yf-layout-bg);
+  color: var(--yf-text);
+}
+
+:root {
+  color-scheme: light;
+  --yf-primary: #646cff;
+  --yf-radius: 6px;
+  --yf-layout-bg: #f7faff;
+  --yf-sider-bg: #1f2340;
+  --yf-sider-bg-2: #282d52;
+  --yf-header-bg: rgba(255, 255, 255, 0.86);
+  --yf-card-bg: #ffffff;
+  --yf-card-border: #e5e7eb;
+  --yf-text: #1f2937;
+  --yf-text-2: #64748b;
+  --yf-table-header-bg: #f8fafc;
+  --yf-shadow-header: 0 1px 2px rgb(15 23 42 / 8%);
+  --yf-shadow-sider: 2px 0 10px rgb(15 23 42 / 10%);
+  --yf-content-padding: 16px;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --yf-layout-bg: #121212;
+  --yf-sider-bg: #14172b;
+  --yf-sider-bg-2: #1b1f38;
+  --yf-header-bg: rgba(24, 24, 28, 0.88);
+  --yf-card-bg: #1d1f2b;
+  --yf-card-border: #2d3142;
+  --yf-text: #e5e7eb;
+  --yf-text-2: #9ca3af;
+  --yf-table-header-bg: #242633;
+  --yf-shadow-header: 0 1px 2px rgb(0 0 0 / 32%);
+  --yf-shadow-sider: 2px 0 10px rgb(0 0 0 / 28%);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 .logo {
@@ -14,13 +52,39 @@ body,
   color: #fff;
   font-size: 18px;
   font-weight: 600;
-  letter-spacing: 2px;
+  letter-spacing: 0;
+}
+
+.app-shell {
+  min-height: 100%;
+  background: var(--yf-layout-bg);
+}
+
+.app-sider {
+  background: linear-gradient(180deg, var(--yf-sider-bg), var(--yf-sider-bg-2)) !important;
+  box-shadow: var(--yf-shadow-sider);
+}
+
+.app-header {
+  height: 56px;
+  padding: 0 20px !important;
+  background: var(--yf-header-bg) !important;
+  border-bottom: 1px solid var(--yf-card-border);
+  box-shadow: var(--yf-shadow-header);
+  backdrop-filter: blur(12px);
+}
+
+.app-content {
+  padding: var(--yf-content-padding);
+  min-height: 281px;
 }
 
 .page-card {
   padding: 16px;
-  background: #fff;
-  border-radius: 8px;
+  background: var(--yf-card-bg);
+  border: 1px solid var(--yf-card-border);
+  border-radius: var(--yf-radius);
+  color: var(--yf-text);
 }
 
 .page-title {
@@ -38,8 +102,9 @@ body,
 }
 
 .stat-card {
-  background: #fff;
-  border-radius: 8px;
+  background: var(--yf-card-bg);
+  border: 1px solid var(--yf-card-border);
+  border-radius: var(--yf-radius);
   padding: 16px;
 }
 
@@ -49,7 +114,15 @@ body,
 }
 
 .stat-label {
-  color: #8c8c8c;
+  color: var(--yf-text-2);
   font-size: 12px;
   margin-top: 4px;
+}
+
+.theme-swatch {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(15 23 42 / 16%);
 }

@@ -5,11 +5,17 @@ import { useRoute, useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import {
   ApartmentOutlined,
+  BgColorsOutlined,
+  BulbOutlined,
   CloudServerOutlined,
+  CompressOutlined,
   DashboardOutlined,
   FileTextOutlined,
   GlobalOutlined,
   LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  PoweroffOutlined,
   ProfileOutlined,
   SafetyCertificateOutlined,
   ScheduleOutlined,
@@ -18,11 +24,14 @@ import {
   UserOutlined,
 } from '@ant-design/icons-vue';
 import { useAuthStore } from '@/stores/auth';
+import { useThemeStore } from '@/stores/theme';
 
 const auth = useAuthStore();
+const theme = useThemeStore();
 const route = useRoute();
 const router = useRouter();
 const collapsed = ref(false);
+const colors = ['#646cff', '#1677ff', '#0f9f6e', '#d97706', '#dc2626'];
 
 interface MenuItem {
   key: string;
@@ -58,7 +67,10 @@ const tenantMenus: MenuItem[] = [
 
 const isTenant = computed(() => auth.isTenant);
 const menus = computed<MenuItem[]>(() => (isTenant.value ? tenantMenus : adminMenus));
-const selected = computed<string[]>(() => [route.path]);
+const selected = computed<string[]>(() => {
+  const found = menus.value.find((m) => route.path === m.key || route.path.startsWith(`${m.key}/`));
+  return [found?.key || route.path];
+});
 const title = computed(() => (isTenant.value ? '租户门户' : '运营控制台'));
 
 function onMenuClick(info: { key: string }) {
@@ -73,9 +85,9 @@ function logout() {
 </script>
 
 <template>
-  <a-layout class="h-full">
-    <a-layout-sider v-model:collapsed="collapsed" collapsible theme="dark" width="210">
-      <div class="logo">EdgeCDN</div>
+  <a-layout class="app-shell">
+    <a-layout-sider v-model:collapsed="collapsed" class="app-sider" collapsible theme="dark" width="220">
+      <div class="logo">{{ collapsed ? 'YF' : 'YFSCDN' }}</div>
       <a-menu theme="dark" mode="inline" :selected-keys="selected" @click="onMenuClick">
         <a-menu-item v-for="m in menus" :key="m.key">
           <template #icon><component :is="m.icon" /></template>
@@ -84,18 +96,60 @@ function logout() {
       </a-menu>
     </a-layout-sider>
     <a-layout>
-      <a-layout-header class="flex items-center justify-end gap-4 bg-white px-6" style="padding: 0 24px">
-        <span class="text-sm text-gray-500">{{ title }}</span>
-        <span class="flex items-center gap-1 text-sm text-gray-700">
-          <UserOutlined />
-          <span>{{ auth.displayName || '用户' }}</span>
-        </span>
-        <a-button size="small" @click="logout">
-          <template #icon><LogoutOutlined /></template>
-          退出登录
-        </a-button>
+      <a-layout-header class="app-header flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <a-button type="text" size="small" @click="collapsed = !collapsed">
+            <template #icon>
+              <MenuUnfoldOutlined v-if="collapsed" />
+              <MenuFoldOutlined v-else />
+            </template>
+          </a-button>
+          <div>
+            <div class="text-base font-600">{{ title }}</div>
+            <div class="text-xs text-gray-500">GoEdge 功能复刻 · Soybean 风格控制台</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a-tooltip title="主题模式">
+            <a-button type="text" size="small" @click="theme.toggleMode">
+              <template #icon>
+                <BulbOutlined v-if="theme.isDark" />
+                <PoweroffOutlined v-else />
+              </template>
+            </a-button>
+          </a-tooltip>
+          <a-tooltip title="紧凑密度">
+            <a-button type="text" size="small" @click="theme.toggleDensity">
+              <template #icon><CompressOutlined /></template>
+            </a-button>
+          </a-tooltip>
+          <a-dropdown trigger="click">
+            <a-button type="text" size="small">
+              <template #icon><BgColorsOutlined /></template>
+            </a-button>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item v-for="color in colors" :key="color" @click="theme.setPrimaryColor(color)">
+                  <div class="flex items-center gap-2">
+                    <span class="theme-swatch" :style="{ background: color }" />
+                    <span>{{ color }}</span>
+                  </div>
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+          <a-divider type="vertical" />
+          <span class="flex items-center gap-1 text-sm">
+            <UserOutlined />
+            <span>{{ auth.displayName || '用户' }}</span>
+          </span>
+          <a-button size="small" @click="logout">
+            <template #icon><LogoutOutlined /></template>
+            退出登录
+          </a-button>
+        </div>
       </a-layout-header>
-      <a-layout-content class="p-4" style="min-height: 281px">
+      <a-layout-content class="app-content">
         <router-view />
       </a-layout-content>
       <a-layout-footer class="text-center text-gray-400">EdgeCDN · 模块化 CDN 系统</a-layout-footer>
