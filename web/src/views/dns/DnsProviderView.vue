@@ -202,7 +202,7 @@ onMounted(() => {
       type="info"
       show-icon
       class="mt-3"
-      message="已具备服务商配置、租户隔离、同步任务入队，以及 Cloudflare / DNSPod 真实 API 同步；Aliyun 签名适配器待补。Cloudflare Token 填 Secret Key，DNSPod SecretId 填 Access Key、SecretKey 填 Secret Key。"
+      message="已具备服务商配置、租户隔离、同步任务入队，以及 Cloudflare / DNSPod / Aliyun 真实 API 同步。Cloudflare Token 填 Secret Key；DNSPod/阿里云 AccessKeyId 填 Access Key、AccessKeySecret 填 Secret Key。"
     />
 
     <a-modal v-model:open="show" :title="editing ? '编辑 DNS 服务商' : '添加 DNS 服务商'" width="640px" :confirm-loading="saving" @ok="submit">

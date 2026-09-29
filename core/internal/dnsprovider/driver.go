@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -28,6 +30,8 @@ func DriverFor(p Provider) Driver {
 		return cloudflareDriver{}
 	case "dnspod":
 		return dnspodDriver{}
+	case "aliyun":
+		return aliyunDriver{}
 	case "manual", "mock":
 		return noopDriver{}
 	default:
@@ -60,6 +64,192 @@ func (d unsupportedDriver) Upsert(context.Context, Provider, dns.Record, string)
 
 func (d unsupportedDriver) Delete(context.Context, Provider, dns.Record, string) error {
 	return fmt.Errorf("%s adapter is not implemented yet", d.typ)
+}
+
+type aliyunDriver struct{}
+
+type aliyunResponse struct {
+	RecordID string `json:"RecordId"`
+	Code     string `json:"Code"`
+	Message  string `json:"Message"`
+}
+
+func (aliyunDriver) Upsert(ctx context.Context, p Provider, r dns.Record, upstreamID string) (string, error) {
+	if r.Enabled == 0 {
+		if upstreamID != "" {
+			return "", aliyunDriver{}.Delete(ctx, p, r, upstreamID)
+		}
+		return "", nil
+	}
+	params := map[string]string{
+		"DomainName": r.Domain,
+		"RR":         aliyunRR(r),
+		"Type":       r.Type,
+		"Value":      r.Value,
+		"TTL":        fmt.Sprint(r.TTL),
+	}
+	action := "AddDomainRecord"
+	if upstreamID != "" {
+		action = "UpdateDomainRecord"
+		params["RecordId"] = upstreamID
+	}
+	if r.Type == "MX" {
+		params["Priority"] = fmt.Sprint(r.Priority)
+	}
+	var out aliyunResponse
+	if err := aliyunRPC(ctx, p, action, params, &out); err != nil {
+		return "", err
+	}
+	if upstreamID != "" {
+		return upstreamID, nil
+	}
+	if out.RecordID == "" {
+		return "", fmt.Errorf("aliyun create response missing RecordId")
+	}
+	return out.RecordID, nil
+}
+
+func (aliyunDriver) Delete(ctx context.Context, p Provider, _ dns.Record, upstreamID string) error {
+	if upstreamID == "" {
+		return nil
+	}
+	return aliyunRPC(ctx, p, "DeleteDomainRecord", map[string]string{"RecordId": upstreamID}, nil)
+}
+
+func aliyunRR(r dns.Record) string {
+	name := strings.TrimSuffix(strings.ToLower(strings.TrimSpace(r.Name)), ".")
+	domain := strings.TrimSuffix(strings.ToLower(strings.TrimSpace(r.Domain)), ".")
+	if name == "" || name == domain {
+		return "@"
+	}
+	suffix := "." + domain
+	if strings.HasSuffix(name, suffix) {
+		return strings.TrimSuffix(name, suffix)
+	}
+	return name
+}
+
+func aliyunRPC(ctx context.Context, p Provider, action string, params map[string]string, out any) error {
+	endpoint := strings.TrimRight(p.APIEndpoint, "/")
+	if endpoint == "" {
+		endpoint = "https://alidns.aliyuncs.com/"
+	}
+	q := map[string]string{
+		"Action":           action,
+		"Version":          "2015-01-09",
+		"Format":           "JSON",
+		"AccessKeyId":      strings.TrimSpace(p.AccessKey),
+		"SignatureMethod":  "HMAC-SHA1",
+		"Timestamp":        time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+		"SignatureVersion": "1.0",
+		"SignatureNonce":   fmt.Sprintf("%d", time.Now().UnixNano()),
+	}
+	for k, v := range params {
+		q[k] = v
+	}
+	q["Signature"] = aliyunSignature("GET", q, strings.TrimSpace(p.SecretKey))
+	values := url.Values{}
+	for k, v := range q {
+		values.Set(k, v)
+	}
+	sep := "?"
+	if strings.Contains(endpoint, "?") {
+		sep = "&"
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+sep+values.Encode(), nil)
+	if err != nil {
+		return err
+	}
+	client := &http.Client{Timeout: 20 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var env aliyunResponse
+	if err := json.Unmarshal(raw, &env); err != nil {
+		return fmt.Errorf("aliyun invalid response: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 || env.Code != "" {
+		if env.Code != "" {
+			return fmt.Errorf("aliyun api failed %s: %s", env.Code, env.Message)
+		}
+		return fmt.Errorf("aliyun api failed status=%d body=%s", resp.StatusCode, string(raw))
+	}
+	if out != nil {
+		if err := json.Unmarshal(raw, out); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func aliyunSignature(method string, params map[string]string, secret string) string {
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		if k != "Signature" {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	pairs := make([]string, 0, len(keys))
+	for _, k := range keys {
+		pairs = append(pairs, aliyunPercent(k)+"="+aliyunPercent(params[k]))
+	}
+	stringToSign := method + "&" + aliyunPercent("/") + "&" + aliyunPercent(strings.Join(pairs, "&"))
+	sum := hmacSHA1([]byte(secret+"&"), stringToSign)
+	return base64Encode(sum)
+}
+
+func aliyunPercent(s string) string {
+	escaped := url.QueryEscape(s)
+	escaped = strings.ReplaceAll(escaped, "+", "%20")
+	escaped = strings.ReplaceAll(escaped, "*", "%2A")
+	escaped = strings.ReplaceAll(escaped, "%7E", "~")
+	return escaped
+}
+
+func hmacSHA1(key []byte, parts ...string) []byte {
+	h := hmac.New(sha1.New, key)
+	for _, p := range parts {
+		_, _ = h.Write([]byte(p))
+	}
+	return h.Sum(nil)
+}
+
+func base64Encode(b []byte) string {
+	const table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	if len(b) == 0 {
+		return ""
+	}
+	out := make([]byte, 0, ((len(b)+2)/3)*4)
+	for i := 0; i < len(b); i += 3 {
+		var n uint32
+		remain := len(b) - i
+		n |= uint32(b[i]) << 16
+		if remain > 1 {
+			n |= uint32(b[i+1]) << 8
+		}
+		if remain > 2 {
+			n |= uint32(b[i+2])
+		}
+		out = append(out, table[(n>>18)&63], table[(n>>12)&63])
+		if remain > 1 {
+			out = append(out, table[(n>>6)&63])
+		} else {
+			out = append(out, '=')
+		}
+		if remain > 2 {
+			out = append(out, table[n&63])
+		} else {
+			out = append(out, '=')
+		}
+	}
+	return string(out)
 }
 
 type dnspodDriver struct{}
