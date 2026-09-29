@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Main layout: dark sider + header + content. Menu is role-driven (admin vs tenant).
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import {
@@ -8,6 +8,7 @@ import {
   BgColorsOutlined,
   BulbOutlined,
   CloudServerOutlined,
+  CloseOutlined,
   CompressOutlined,
   DashboardOutlined,
   FileTextOutlined,
@@ -39,6 +40,11 @@ interface MenuItem {
   icon: unknown;
 }
 
+interface PageTab {
+  path: string;
+  title: string;
+}
+
 const adminMenus: MenuItem[] = [
   { key: '/admin/dashboard', label: '总览', icon: DashboardOutlined },
   { key: '/admin/tenants', label: '租户', icon: TeamOutlined },
@@ -68,10 +74,18 @@ const tenantMenus: MenuItem[] = [
 const isTenant = computed(() => auth.isTenant);
 const menus = computed<MenuItem[]>(() => (isTenant.value ? tenantMenus : adminMenus));
 const selected = computed<string[]>(() => {
-  const found = menus.value.find((m) => route.path === m.key || route.path.startsWith(`${m.key}/`));
+  const activeMenu = route.meta.activeMenu as string | undefined;
+  const found = menus.value.find((m) => (activeMenu || route.path) === m.key || route.path.startsWith(`${m.key}/`));
   return [found?.key || route.path];
 });
 const title = computed(() => (isTenant.value ? '租户门户' : '运营控制台'));
+const pageTitle = computed(() => (route.meta.title as string | undefined) || '未命名页面');
+const breadcrumbItems = computed(() => [
+  title.value,
+  menus.value.find((m) => m.key === selected.value[0])?.label || pageTitle.value,
+  ...(pageTitle.value === menus.value.find((m) => m.key === selected.value[0])?.label ? [] : [pageTitle.value]),
+]);
+const tabs = ref<PageTab[]>([]);
 
 function onMenuClick(info: { key: string }) {
   void router.push(info.key);
@@ -82,6 +96,32 @@ function logout() {
   message.success('已退出登录');
   void router.push('/login');
 }
+
+function closeTab(tab: PageTab) {
+  if (tabs.value.length <= 1) return;
+  const idx = tabs.value.findIndex((t) => t.path === tab.path);
+  tabs.value = tabs.value.filter((t) => t.path !== tab.path);
+  if (route.path === tab.path) {
+    const next = tabs.value[Math.max(0, idx - 1)];
+    void router.push(next.path);
+  }
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    if (route.meta.public) return;
+    const path = route.fullPath;
+    if (!tabs.value.some((t) => t.path === path)) {
+      tabs.value.push({ path, title: pageTitle.value });
+    }
+    if (tabs.value.length > 12) {
+      tabs.value = tabs.value.slice(-12);
+    }
+    document.title = `${pageTitle.value} - YFSCDN`;
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -105,8 +145,10 @@ function logout() {
             </template>
           </a-button>
           <div>
-            <div class="text-base font-600">{{ title }}</div>
-            <div class="text-xs text-gray-500">GoEdge 功能复刻 · Soybean 风格控制台</div>
+            <div class="text-base font-600">{{ pageTitle }}</div>
+            <a-breadcrumb class="app-breadcrumb">
+              <a-breadcrumb-item v-for="item in breadcrumbItems" :key="item">{{ item }}</a-breadcrumb-item>
+            </a-breadcrumb>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -150,7 +192,24 @@ function logout() {
         </div>
       </a-layout-header>
       <a-layout-content class="app-content">
-        <router-view />
+        <div class="page-tabs" v-if="tabs.length">
+          <button
+            v-for="tab in tabs"
+            :key="tab.path"
+            class="page-tab"
+            :class="{ active: tab.path === route.fullPath }"
+            type="button"
+            @click="router.push(tab.path)"
+          >
+            <span>{{ tab.title }}</span>
+            <CloseOutlined v-if="tabs.length > 1" class="page-tab-close" @click.stop="closeTab(tab)" />
+          </button>
+        </div>
+        <router-view v-slot="{ Component }">
+          <transition name="fade-slide" mode="out-in">
+            <component :is="Component" :key="route.fullPath" />
+          </transition>
+        </router-view>
       </a-layout-content>
       <a-layout-footer class="text-center text-gray-400">EdgeCDN · 模块化 CDN 系统</a-layout-footer>
     </a-layout>

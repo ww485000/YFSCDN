@@ -79,6 +79,51 @@ body,
   min-height: 281px;
 }
 
+.app-breadcrumb {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.page-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  max-width: 180px;
+  padding: 0 10px;
+  border: 1px solid var(--yf-card-border);
+  border-radius: var(--yf-radius);
+  background: var(--yf-card-bg);
+  color: var(--yf-text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.page-tab span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-tab.active {
+  border-color: var(--yf-primary);
+  color: var(--yf-primary);
+  background: color-mix(in srgb, var(--yf-primary) 9%, transparent);
+}
+
+.page-tab-close {
+  flex: 0 0 auto;
+  font-size: 11px;
+}
+
 .page-card {
   padding: 16px;
   background: var(--yf-card-bg);
@@ -125,4 +170,37 @@ body,
   border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgb(15 23 42 / 16%);
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 12px !important;
+    align-items: flex-start;
+  }
+
+  .app-content {
+    padding: 12px;
+  }
+
+  .page-card,
+  .stat-card {
+    padding: 12px;
+  }
 }
