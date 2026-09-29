@@ -130,20 +130,31 @@ body,
   border: 1px solid var(--yf-card-border);
   border-radius: var(--yf-radius);
   color: var(--yf-text);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 5%);
 }
 
 .page-title {
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: 17px;
   font-weight: 600;
   margin-bottom: 12px;
 }
 
 .toolbar {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin: -2px 0 14px;
+  padding-bottom: 14px;
   flex-wrap: wrap;
   align-items: center;
+  border-bottom: 1px solid var(--yf-card-border);
+}
+
+.toolbar .page-title {
+  margin-right: auto;
+  margin-bottom: 0;
 }
 
 .stat-card {
@@ -151,6 +162,7 @@ body,
   border: 1px solid var(--yf-card-border);
   border-radius: var(--yf-radius);
   padding: 16px;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 4%);
 }
 
 .stat-value {
@@ -170,6 +182,18 @@ body,
   border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgb(15 23 42 / 16%);
+}
+
+.ant-table-wrapper {
+  color: var(--yf-text);
+}
+
+.ant-table {
+  border-radius: var(--yf-radius);
+}
+
+.ant-modal-content {
+  border-radius: calc(var(--yf-radius) + 2px);
 }
 
 .fade-slide-enter-active,
