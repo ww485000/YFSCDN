@@ -1,11 +1,9 @@
 // Package dns: DNS record management (GoEdge "DNS 解析" module).
 //
 // Records are stored per tenant/zone and can be pushed to an upstream DNS
-// provider. In this build the provider integration is a stub (see the
-// task types dns_resolve/dns_clean): records are managed, listed and can be
-// exported, but no external API calls are made unless a provider is
-// configured later. This matches the Windows-friendly "config compatible +
-// graceful degradation" policy for the DNS provider feature.
+// provider. The dns_resolve/dns_clean task types call dnsprovider drivers;
+// providers that do not yet have a real adapter degrade with an explicit task
+// error instead of blocking local DNS record management.
 package dns
 
 import (
@@ -214,4 +212,10 @@ func (s *Store) TenantOf(id int64) (int64, error) {
 		return 0, fmt.Errorf("record not found")
 	}
 	return tid, err
+}
+
+// ListTenant returns all records for one tenant, optionally filtered by zone.
+func (s *Store) ListTenant(tenantID int64, domain string) ([]Record, error) {
+	out, _, err := s.List(tenantID, domain, 1, 200)
+	return out, err
 }

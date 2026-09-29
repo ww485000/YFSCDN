@@ -20,7 +20,7 @@ YFSCDN 当前已具备可运行的核心 CDN 闭环，但还不是 GoEdge 的 10
 | 优先级 | 模块 | 目标 |
 |---|---|---|
 | P0 | ACME 免费证书 | Let's Encrypt/ZeroSSL 账号、订单、HTTP-01、DNS-01、自动续签 |
-| P0 | DNS Provider | 已有 Provider 表、CRUD/API、租户隔离、任务推送；DNSPod/Cloudflare/阿里云真实适配器待补 |
+| P0 | DNS Provider | 已有 Provider 表、CRUD/API、租户隔离、任务推送、同步映射表和 Cloudflare 真实 API 同步；DNSPod/阿里云签名适配器待补 |
 | P0 | 集群/区域/API 节点 | 集群、区域、节点安装/升级、API 节点状态 |
 | P1 | WAF 策略集 | 全局策略、规则组、CC 高级策略、动作审计 |
 | P1 | 计费/套餐 | 套餐、订单、流水、额度扣减、欠费停用联动 |

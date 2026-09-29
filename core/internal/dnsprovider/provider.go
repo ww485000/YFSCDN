@@ -37,6 +37,12 @@ func scan(r interface{ Scan(...any) error }) (Provider, error) {
 	return p, err
 }
 
+func scanWithSecret(r interface{ Scan(...any) error }) (Provider, error) {
+	var p Provider
+	err := r.Scan(&p.ID, &p.TenantID, &p.Name, &p.Type, &p.AccessKey, &p.SecretKey, &p.APIEndpoint, &p.Status, &p.Remark, &p.CreatedAt, &p.UpdatedAt)
+	return p, err
+}
+
 func normalizeType(t string) string {
 	t = strings.ToLower(strings.TrimSpace(t))
 	if t == "" {
@@ -115,6 +121,10 @@ func (s *Store) Get(id int64) (Provider, error) {
 	return scan(s.db.QueryRow(`SELECT `+cols+` FROM dns_providers WHERE id = ?`, id))
 }
 
+func (s *Store) GetWithSecret(id int64) (Provider, error) {
+	return scanWithSecret(s.db.QueryRow(`SELECT `+cols+` FROM dns_providers WHERE id = ?`, id))
+}
+
 func (s *Store) List(tenantID int64, page, size int) ([]Provider, int64, error) {
 	if page < 1 {
 		page = 1
@@ -153,4 +163,49 @@ func (s *Store) TenantOf(id int64) (int64, error) {
 		return 0, fmt.Errorf("provider not found")
 	}
 	return tid, err
+}
+
+func (s *Store) ActiveByTenant(tenantID int64) ([]Provider, error) {
+	rows, err := s.db.Query(`SELECT `+cols+` FROM dns_providers WHERE tenant_id = ? AND status = 1 ORDER BY id ASC`, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Provider
+	for rows.Next() {
+		p, err := scanWithSecret(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) GetSync(providerID, recordID int64) (string, error) {
+	var upstreamID string
+	err := s.db.QueryRow(`SELECT upstream_id FROM dns_record_sync WHERE provider_id = ? AND record_id = ?`, providerID, recordID).Scan(&upstreamID)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return upstreamID, err
+}
+
+func (s *Store) SaveSync(providerID, recordID int64, upstreamID, hash, errMsg string) error {
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, err := s.db.Exec(`INSERT INTO dns_record_sync (provider_id, record_id, upstream_id, last_hash, last_error, created_at, updated_at)
+		VALUES (?,?,?,?,?,?,?)
+		ON CONFLICT(provider_id, record_id) DO UPDATE SET upstream_id=excluded.upstream_id, last_hash=excluded.last_hash, last_error=excluded.last_error, updated_at=excluded.updated_at`,
+		providerID, recordID, upstreamID, hash, errMsg, now, now)
+	return err
+}
+
+func (s *Store) DeleteSync(providerID, recordID int64) error {
+	_, err := s.db.Exec(`DELETE FROM dns_record_sync WHERE provider_id = ? AND record_id = ?`, providerID, recordID)
+	return err
+}
+
+func (s *Store) DeleteRecordSyncs(recordID int64) error {
+	_, err := s.db.Exec(`DELETE FROM dns_record_sync WHERE record_id = ?`, recordID)
+	return err
 }

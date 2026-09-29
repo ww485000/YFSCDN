@@ -205,14 +205,9 @@ func Run(configPath, staticDir string) error {
 		}
 		return nil
 	})
-	tasksStore.SetHandler(task.TypeDNSResolve, func(t *task.Task) error {
-		log.Printf("[task] dns resolve target=%s payload=%s", t.Target, t.Payload)
-		return nil
-	})
-	tasksStore.SetHandler(task.TypeDNSClean, func(t *task.Task) error {
-		log.Printf("[task] dns clean target=%s payload=%s", t.Target, t.Payload)
-		return nil
-	})
+	dnsProcessor := dnsprovider.NewProcessor(dnsProviders, dnsStore)
+	tasksStore.SetHandler(task.TypeDNSResolve, dnsProcessor.Resolve)
+	tasksStore.SetHandler(task.TypeDNSClean, dnsProcessor.Clean)
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()

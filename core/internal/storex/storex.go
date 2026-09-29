@@ -175,6 +175,18 @@ var Migrations = []string{
 		updated_at TEXT NOT NULL
 	)`,
 	`CREATE INDEX IF NOT EXISTS idx_dns_providers_tenant ON dns_providers (tenant_id, id DESC)`,
+	`CREATE TABLE IF NOT EXISTS dns_record_sync (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		provider_id INTEGER NOT NULL,
+		record_id INTEGER NOT NULL,
+		upstream_id TEXT NOT NULL DEFAULT '',
+		last_hash TEXT NOT NULL DEFAULT '',
+		last_error TEXT NOT NULL DEFAULT '',
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL,
+		UNIQUE(provider_id, record_id)
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_dns_record_sync_provider ON dns_record_sync (provider_id, record_id)`,
 }
 
 // codeMigrations adds columns to existing tables (SQLite ALTER is not

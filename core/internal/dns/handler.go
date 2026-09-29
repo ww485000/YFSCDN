@@ -70,11 +70,12 @@ func RegisterAdmin(r *webx.Router, s *Store, tasks *task.Store) {
 			webx.Fail(c.W, 400, 400, err.Error())
 			return
 		}
+		rec, _ := s.Get(id)
 		if _, err := s.Delete(id); err != nil {
 			webx.Fail(c.W, 400, 400, err.Error())
 			return
 		}
-		enqueueDNS(tasks, task.TypeDNSClean, "record:"+itoa(id), map[string]any{"id": id})
+		enqueueDNS(tasks, task.TypeDNSClean, "record:"+itoa(id), rec)
 		webx.OK(c.W, nil)
 	})
 }
@@ -146,11 +147,12 @@ func RegisterUser(r *webx.Router, s *Store, tasks *task.Store) {
 			webx.Fail(c.W, 404, 404, "record not found")
 			return
 		}
+		rec, _ := s.Get(id)
 		if _, err := s.Delete(id); err != nil {
 			webx.Fail(c.W, 400, 400, err.Error())
 			return
 		}
-		enqueueDNS(tasks, task.TypeDNSClean, "record:"+itoa(id), map[string]any{"id": id, "tenant_id": c.User.TenantID()})
+		enqueueDNS(tasks, task.TypeDNSClean, "record:"+itoa(id), rec)
 		webx.OK(c.W, nil)
 	})
 }
